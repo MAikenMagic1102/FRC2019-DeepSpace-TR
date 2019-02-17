@@ -62,8 +62,8 @@ public class Arm{
         arm.config_kI(constants.Arm_kSlotIdx, constants.Arm_kI, constants.Arm_kTimeoutMs);
         arm.config_kD(constants.Arm_kSlotIdx, constants.Arm_kD, constants.Arm_kTimeoutMs);
 
-        arm.configMotionCruiseVelocity(470, constants.Arm_kTimeoutMs); //Sensor Units per 100 MS
-        arm.configMotionAcceleration(200, constants.Arm_kTimeoutMs); //Sensor Units per 100 MS
+        arm.configMotionCruiseVelocity(constants.ArmMaxVelocity, constants.Arm_kTimeoutMs); //Sensor Units per 100 MS
+        arm.configMotionAcceleration(constants.ArmMaxAccel, constants.Arm_kTimeoutMs); //Sensor Units per 100 MS
 
         arm.setSelectedSensorPosition(0, constants.Arm_kPIDLoopIdx, constants.Arm_kTimeoutMs);
     }
@@ -91,7 +91,7 @@ public class Arm{
 
     public void holdingPosition(){
         if(AcurrentMode == AMode.HOLD || AcurrentMode == AMode.HOLDING){
-            arm.set(ControlMode.MotionMagic, holdPosition);
+            arm.set(ControlMode.Position, holdPosition);
             AcurrentMode = AMode.HOLDING;
         }
     }
@@ -101,6 +101,10 @@ public class Arm{
     }
 
     public void setPosition(APosition position){
+        if(AcurrentMode == AMode.MOTION_MAGIC && isArmProfileComplete()){
+            AcurrentMode = AMode.HOLD;
+            holdPosition();
+        }else{
         AcurrentPos = position;
         AcurrentMode = AMode.MOTION_MAGIC;
         switch(AcurrentGP){
@@ -113,13 +117,13 @@ public class Arm{
                     arm.set(ControlMode.MotionMagic, -1055);
                         break;
                     case LOAD:
-                    arm.set(ControlMode.MotionMagic, -1042);    
+                    arm.set(ControlMode.MotionMagic, -1206);    
                         break;
                     case FLIPLOAD:
                     arm.set(ControlMode.MotionMagic, 931);
                         break;
                     case HIGH:
-                    arm.set(ControlMode.MotionMagic, -426);
+                    arm.set(ControlMode.MotionMagic, -652);
                         break;
                 }
                 break;
@@ -132,17 +136,24 @@ public class Arm{
                     arm.set(ControlMode.MotionMagic, -1055);
                         break;
                     case LOAD:
-                    arm.set(ControlMode.MotionMagic, -1042);    
+                    arm.set(ControlMode.MotionMagic, -1052);    
                         break;
                     case FLIPLOAD:
                     arm.set(ControlMode.MotionMagic, 931);
                         break;
                     case HIGH:
-                    arm.set(ControlMode.MotionMagic, -426);
                         break;
                 }
                 break;
+            }
         }
+    }
+
+    public boolean isProfileFinished(){
+        if(arm.getClosedLoopError() < 28)
+            return true;
+        else
+            return false;
     }
 
     public String getCurrentGamePiece(){
@@ -189,8 +200,8 @@ public class Arm{
         return arm.isMotionProfileFinished();
     }
 
-    public double getError(){
-        return arm.getActiveTrajectoryPosition() - arm.getSelectedSensorPosition();
+    public int getClosedLoopError(){
+        return arm.getClosedLoopError();
     }
         
 }

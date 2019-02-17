@@ -18,6 +18,7 @@ public class Elevator{
     Arm arm = new Arm();
 
     private double holdPosition = 0;
+    public double targetPosition = 0;
 
     private CANSparkMax Master;
     private CANSparkMax Slave;
@@ -79,6 +80,7 @@ public class Elevator{
 
         PIDController.setSmartMotionMaxVelocity(constants.ElevatorMaxVelocity, constants.Elevator_kSmartMotionSlot);
         PIDController.setSmartMotionMaxAccel(constants.ElevatorMaxAccel, constants.Elevator_kSmartMotionSlot);
+        PIDController.setSmartMotionAllowedClosedLoopError(constants.Elevator_AllowedError, constants.Elevator_kSmartMotionSlot);
 
         Master.burnFlash();
     }
@@ -99,6 +101,7 @@ public class Elevator{
             }else{
                 currentMode = Mode.HOLD;
                 holdPosition = RightEncoder.getPosition();
+                targetPosition = holdPosition;
                 holdingPosition();
             }
         }
@@ -125,18 +128,25 @@ public class Elevator{
                     //Master.set(ControlMode.MotionMagic, 0);
                         break;
                     case LOAD:
-                    //Master.set(ControlMode.MotionMagic, -1042);    
+                        targetPosition = constants.ElevatorHatchLoad;
+                        PIDController.setReference(constants.ElevatorHatchLoad, ControlType.kSmartMotion);   
                         break;
                     case FLIP:
                     //Master.set(ControlMode.MotionMagic, 931);
                         break;
-                    case HIGH:
+                    case HIGH://95
+                        targetPosition = 95;
+                        PIDController.setReference(95, ControlType.kSmartMotion);
                     //Master.set(ControlMode.MotionMagic, -426);
                         break;
-                    case MID:
+                    case MID://54
+                    targetPosition = 54;
+                    PIDController.setReference(54, ControlType.kSmartMotion);
                     //Master.set(ControlMode.MotionMagic, -1055);
                         break;
                     case LOW:
+                        targetPosition = constants.ElevatorHatchLoad;
+                        PIDController.setReference(constants.ElevatorHatchLoad, ControlType.kSmartMotion);
                     //Master.set(ControlMode.MotionMagic, -1055);
                         break;
                 }
@@ -147,15 +157,21 @@ public class Elevator{
                     //Master.set(ControlMode.MotionMagic, 0);
                         break;
                     case LOAD:
+                        targetPosition = constants.ElevatorHatchLoad;
                         PIDController.setReference(constants.ElevatorHatchLoad, ControlType.kSmartMotion);
                         break;
                     case FLIP:
+                        targetPosition = constants.ElevatorFlip;
                         PIDController.setReference(constants.ElevatorFlip, ControlType.kSmartMotion);
                         break;
                     case HIGH:
+                        targetPosition = 98;
+                        PIDController.setReference(98, ControlType.kSmartMotion);
                     //Master.set(ControlMode.MotionMagic, -426);
                         break;
                     case MID:
+                        targetPosition = 54;
+                        PIDController.setReference(54, ControlType.kSmartMotion);
                     //Master.set(ControlMode.MotionMagic, -1055);
                         break;
                     case LOW:
@@ -163,6 +179,7 @@ public class Elevator{
                         break;
                 }
                 break;
+            
         }
     }
 
@@ -170,6 +187,19 @@ public class Elevator{
     // public String getControlMode(){
     //     return //Master.getControlMode().toString();
     // }
+
+    public double getError(){
+        return targetPosition - getElevatorSensorPosition();
+    }
+
+    public boolean isProfileFinished(){
+        if(getError() < 1){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
 
     public double getHoldPosition(){
         return holdPosition;

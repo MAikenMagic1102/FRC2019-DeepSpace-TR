@@ -2,7 +2,7 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
-import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.first.wpilibj.Solenoid;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 
@@ -16,7 +16,7 @@ public class Climber {
     TalonSRX wing_wheel_right;
     TalonSRX wing_left;
     TalonSRX wing_right;
-    DoubleSolenoid Dsolenoid;
+    Solenoid climber;
 
 
     public Climber(){
@@ -24,7 +24,7 @@ public class Climber {
         // wing_wheel_right = new TalonSRX(9);
         // wing_left = new TalonSRX(9);
         // wing_right = new TalonSRX(9);
-        // Dsolenoid = new DoubleSolenoid(1, 1);
+        climber = new Solenoid(1, 0);
     }
 
     public void wing_forward(){
@@ -58,15 +58,11 @@ public class Climber {
     }
 
     public void climb_cylinder_forward(){
-        Dsolenoid.set(DoubleSolenoid.Value.kForward);
+        climber.set(true);
     
     }
     public void climb_cylinder_reverse(){
-        Dsolenoid.set(DoubleSolenoid.Value.kReverse);
-    }
-
-    public void climb_cylinder_neutral(){
-        Dsolenoid.set(DoubleSolenoid.Value.kOff);
+        climber.set(false);
     }
     
 }

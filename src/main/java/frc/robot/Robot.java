@@ -14,14 +14,16 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import edu.wpi.cscore.CvSink;
 import edu.wpi.cscore.CvSource;
+import edu.wpi.cscore.UsbCamera;
 import edu.wpi.first.cameraserver.CameraServer;
-
+import edu.wpi.first.wpilibj.IterativeRobotBase;
 import edu.wpi.first.wpilibj.PowerDistributionPanel;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
-
+import edu.wpi.first.wpilibj.Watchdog;
 import frc.libs.RazerController;
 import frc.robot.subsystems.Arm;
+import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Elevator;
 import frc.robot.subsystems.Elevator.GamePiece;
@@ -58,11 +60,15 @@ public class Robot extends TimedRobot {
 
   PowerDistributionPanel PDP = new PowerDistributionPanel(0);
 
+  UsbCamera camera1;
+  UsbCamera camera2;
   Limelight limelight = new Limelight();
+
   Elevator elevator = new Elevator();
   Drivetrain drivetrain = new Drivetrain();
   Intake intake = new Intake();
   Arm arm = new Arm();
+  Climber climber = new Climber();
 
   /**
    * This function is run when the robot is first started up and should be
@@ -75,35 +81,49 @@ public class Robot extends TimedRobot {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto modes", m_chooser);
-  
+    updateDashboard();
+
+    camera1 = CameraServer.getInstance().startAutomaticCapture(0);
+    camera2 = CameraServer.getInstance().startAutomaticCapture(1);
   }
 
   
 
   public void updateDashboard(){
-    //SmartDashboard.putNumber("Left Motor Encoder", elevator.getLeftMotorPosition());
-    //SmartDashboard.putNumber("Right Motor Encoder", elevator.getRightMotorPosition());
-    SmartDashboard.putNumber("LeftY", driver.leftthumby());
-    SmartDashboard.putNumber("RightX", driver.rightthumbx());
-    SmartDashboard.putNumber("Triggers", driver.triggers());
-    
-    SmartDashboard.putNumber("Drive flipped?", flipdrive);
-    SmartDashboard.putBoolean("Mecanum Enabled?", drivemode);
-    SmartDashboard.putBoolean("Shift Solenoid State: ", drivetrain.getShiftSolenoidState());
+    try{
+      new Thread(() -> {
+        while(true){
+            //SmartDashboard.putNumber("Left Motor Encoder", elevator.getLeftMotorPosition());
+            //SmartDashboard.putNumber("Right Motor Encoder", elevator.getRightMotorPosition());
+          SmartDashboard.putNumber("LeftY", driver.leftthumby());
+          SmartDashboard.putNumber("RightX", driver.rightthumbx());
+          SmartDashboard.putNumber("Triggers", driver.triggers());
 
-    SmartDashboard.putNumber("Arm Current", arm.getMotorOutputCurrent());
-    SmartDashboard.putNumber("Relative Arm Position", arm.getArmSensorPosition());
-    SmartDashboard.putString("Arm Mode", arm.getAcurrentPositionMode());
-    SmartDashboard.putNumber("Arm Hold Position: ", arm.getHoldPosition());
-    SmartDashboard.putString("Arm Gamepiece: ", arm.getCurrentGamePiece());
-    SmartDashboard.putNumber("Arm Error: ", arm.getError());
+          SmartDashboard.putBoolean("Cargo", game_piece);
+          SmartDashboard.putBoolean("Hatch", !game_piece);
+          SmartDashboard.putNumber("Drive flipped?", flipdrive);
+          SmartDashboard.putBoolean("Mecanum Enabled?", drivemode);
+          SmartDashboard.putBoolean("Shift Solenoid State: ", drivetrain.getShiftSolenoidState());
 
-    SmartDashboard.putNumber("Elevator Output Current: ", elevator.getMotorOutputCurrent());
-    SmartDashboard.putNumber("Elevator Sensor Position: ", elevator.getElevatorSensorPosition());
-    SmartDashboard.putString("Elevator Current Mode: ", elevator.getCurrentMode());
-    SmartDashboard.putNumber("Elevator Hold Position: ", elevator.getHoldPosition());
-  
-    SmartDashboard.putBoolean("Arm Flipped", flip_arm);
+          SmartDashboard.putNumber("Arm Current", arm.getMotorOutputCurrent());
+          SmartDashboard.putNumber("Relative Arm Position", arm.getArmSensorPosition());
+          SmartDashboard.putString("Arm Mode", arm.getAcurrentPositionMode() + " " + arm.getAcurrentMode());
+          SmartDashboard.putNumber("Arm Hold Position: ", arm.getHoldPosition());
+          SmartDashboard.putNumber("Arm Error: ", arm.getClosedLoopError());
+
+          SmartDashboard.putNumber("Elevator Output Current: ", elevator.getMotorOutputCurrent());
+          SmartDashboard.putNumber("Elevator Sensor Position: ", elevator.getElevatorSensorPosition());
+          SmartDashboard.putString("Elevator Current Mode: ", elevator.getCurrentMode());
+          SmartDashboard.putNumber("Elevator Hold Position: ", elevator.getHoldPosition());
+          SmartDashboard.putNumber("Elevator Error: ", elevator.getError());
+          SmartDashboard.putBoolean("Elevator Profile Finished", elevator.isProfileFinished());
+          SmartDashboard.putNumber("Elevator Target Position", elevator.targetPosition);
+
+          SmartDashboard.putBoolean("Arm Flipped", flip_arm);
+        }
+      }).start();
+    }catch(Exception e){
+    }
   }
 
   /**
@@ -158,7 +178,6 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
-    updateDashboard();
 
     if(driver.abutton_pressed()){
       flipdrive = flipdrive * -1;
@@ -217,7 +236,7 @@ public class Robot extends TimedRobot {
         if(!flip_arm && arm.getArmSensorPosition() < 10){
           elevator.setPosition(Position.LOAD);
         }else{
-          if(flip_arm && arm.getArmSensorPosition() > 100){
+          if(flip_arm && arm.getArmSensorPosition() > 10){
             elevator.setPosition(Position.LOAD);
           }
         }
@@ -226,19 +245,23 @@ public class Robot extends TimedRobot {
 
       if(operator.ybutton_pressed()){
         elevator.setPosition(Position.HIGH);
+        if(game_piece && !flip_arm)
+          arm.setPosition(APosition.HIGH);
       }
 
       if(operator.bbutton_pressed()){
         elevator.setPosition(Position.MID);
+        if(game_piece && !flip_arm)
+          arm.setPosition(APosition.HIGH);
       }
 
       if(operator.abutton_pressed()){
         elevator.setPosition(Position.LOW);
+        if(game_piece && !flip_arm)
+          arm.setPosition(APosition.HIGH);
       }
 
       if(operator.ltbutton_pressed()){
-        elevator.setPosition(Position.FLIP);
-
         if(elevator.getElevatorSensorPosition() > 33 && !flip_arm){
           arm.setPosition(APosition.FLIPLOAD);
           flip_arm = !flip_arm;
@@ -254,7 +277,11 @@ public class Robot extends TimedRobot {
     }
   
     if(operator.rightthumby() > 0.2 || operator.rightthumby() < -0.2){
-      arm.set(operator.rightthumby() * 0.3);
+      if(arm.getArmSensorPosition() >= 900 && operator.rightthumby() > 0.2){
+        arm.holdPosition();
+      }else{
+        arm.set(operator.rightthumby() * 0.3);
+      }
     }else{
       arm.holdPosition();
     }
