@@ -203,5 +203,25 @@ public class Arm{
     public int getClosedLoopError(){
         return arm.getClosedLoopError();
     }
+
+    public boolean isArmFlipped(){
+        if(arm.getSelectedSensorPosition() > 850 || arm.getSelectedSensorPosition() < -900){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public boolean isArmFlippingPastElevator(){
+        if(arm.getActiveTrajectoryPosition() == 931 && arm.getSelectedSensorPosition() > 100){
+            return true;
+        }else{
+            if(arm.getActiveTrajectoryPosition() == -1052 && arm.getSelectedSensorPosition() < -100){
+                return true;
+            }else{
+                return false;
+            }
+        }
+    }
         
 }

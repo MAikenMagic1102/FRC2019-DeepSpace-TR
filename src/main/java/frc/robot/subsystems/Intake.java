@@ -20,6 +20,10 @@ public class Intake{
          ball_intake = new TalonSRX(8);
          hatch_intake = new DoubleSolenoid(1,4,5);
     }
+
+    public void set(double output){
+        ball_intake.set(ControlMode.PercentOutput, output);
+    }
     
     public void ball_forward(){
         ball_intake.set(ControlMode.PercentOutput, 0.75);

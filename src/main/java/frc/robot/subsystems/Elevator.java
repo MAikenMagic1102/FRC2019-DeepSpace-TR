@@ -5,7 +5,8 @@ import frc.robot.Constants;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.ControlType;
 import com.revrobotics.CANEncoder;
-import com.revrobotics.CANPIDController;
+//import com.revrobotics.CANPIDController;
+import frc.libs.MagicCANPIDController;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.wpilibj.Timer;
@@ -24,9 +25,9 @@ public class Elevator{
     private CANSparkMax Slave;
 
     private CANEncoder LeftEncoder;
-    private CANEncoder RightEncoder;
+    private CANEncoder MasterEncoder;
 
-    private CANPIDController PIDController;
+    private MagicCANPIDController PIDController;
 
     public enum Mode{
         MANUAL,
@@ -63,13 +64,11 @@ public class Elevator{
 
         Slave.follow(Master, true);
 
-        PIDController = Master.getPIDController();
+        PIDController = new MagicCANPIDController(Master);//Master.getPIDController(); //new MagicCANPIDController(Master);
 
-        LeftEncoder = Master.getEncoder();
-        RightEncoder = Master.getEncoder();
+        MasterEncoder = Master.getEncoder();
 
-        RightEncoder.setPosition(0);
-        LeftEncoder.setPosition(0);
+        MasterEncoder.setPosition(0);
 
         PIDController.setP(constants.Elevator_kP);
         PIDController.setI(constants.Elevator_kI);
@@ -100,7 +99,7 @@ public class Elevator{
                 holdingPosition();
             }else{
                 currentMode = Mode.HOLD;
-                holdPosition = RightEncoder.getPosition();
+                holdPosition = MasterEncoder.getPosition();
                 targetPosition = holdPosition;
                 holdingPosition();
             }
@@ -218,12 +217,28 @@ public class Elevator{
     }
 
     public double getElevatorSensorPosition(){
-        return RightEncoder.getPosition();
+        return MasterEncoder.getPosition();
     }
 
     public double getElevatorSensorVelocity(){
-        return RightEncoder.getVelocity();
+        return MasterEncoder.getVelocity();
     }
-        
+    
+    public boolean isElevatorFlippable(){
+        if(MasterEncoder.getPosition() < 35){
+            return false;
+        }else{
+            return true;
+        }
+    }
+
+    public boolean isTargetPositionFlippable(){
+        if(targetPosition > 35 && MasterEncoder.getPosition() > 20){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
 
 }

@@ -2,13 +2,10 @@ package frc.robot.subsystems;
 
 import frc.robot.Constants;
 
-import frc.libs.motion.*;
-
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANEncoder;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
-import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Solenoid;
 
 
@@ -82,8 +79,8 @@ public class Drivetrain{
         
         shift_solenoid.set(false);
         
-        double leftPower =  leftY - rightX;
-        double rightPower = leftY + rightX;
+        double leftPower =  inversion * (leftY - rightX);
+        double rightPower = inversion * (leftY + rightX);
 
         LeftFront.set(drive_math(leftPower));
         LeftRear.set(drive_math(leftPower));
@@ -102,10 +99,10 @@ public class Drivetrain{
         double _FrontLeft = leftY + rightX + triggers;
         double _RearLeft = leftY + rightX - triggers;
 
-        RightRear.set(drive_math(_RearRight));
-        RightFront.set(drive_math(_FrontRight));
-        LeftRear.set(drive_math(_RearLeft));
-        LeftFront.set(drive_math(_FrontLeft));
+        RightRear.set(inversion * drive_math(_RearRight));
+        RightFront.set(inversion * drive_math(_FrontRight));
+        LeftRear.set(inversion * drive_math(_RearLeft));
+        LeftFront.set(inversion * drive_math(_FrontLeft));
 
         shift_solenoid.set(true);
       

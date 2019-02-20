@@ -15,10 +15,25 @@ public class RazerController extends Joystick {
 			return false;
 		
 	}	
+
+	public boolean backbuttonPressed() {
+		if (super.getRawButtonPressed(7))
+			return true;
+		else
+			return false;
+		
+	}	
 	
 	
 	public boolean startbutton() {
 		if (super.getRawButton(8))
+			return true;
+		else
+			return false;
+	}
+
+	public boolean startbuttonPressed() {
+		if (super.getRawButtonPressed(8))
 			return true;
 		else
 			return false;

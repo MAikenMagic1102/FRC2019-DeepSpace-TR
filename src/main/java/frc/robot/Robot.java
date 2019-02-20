@@ -46,11 +46,14 @@ import frc.robot.subsystems.Limelight;
 public class Robot extends TimedRobot {
   private static final String kDefaultAuto = "Default";
   private static final String kCustomAuto = "My Auto";
-  boolean drivemode = false;
   double flipdrive = 1;
+  boolean drivemode = false;
   boolean hatch = false;
   boolean game_piece;
   boolean flip_arm;
+  boolean wings_deployed = false;
+
+  double leftY, leftX, rightX;
 
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
@@ -179,6 +182,10 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
 
+    leftY = driver.leftthumby();
+    leftX = driver.leftthumbx();
+    rightX = driver.rightthumbx();
+
     if(driver.abutton_pressed()){
       flipdrive = flipdrive * -1;
     }
@@ -187,7 +194,7 @@ public class Robot extends TimedRobot {
       drivemode = !drivemode;
     }
 
-    if(driver.xbutton_pressed()){
+    if(driver.rtbutton_pressed()){
       hatch = !hatch;
     }
 
@@ -205,18 +212,34 @@ public class Robot extends TimedRobot {
     
     //If drivemode is false arcade enabled, if drivemode is true....mecanum
     if(!drivemode){
-      drivetrain.arcade_drive_openloop(flipdrive, driver.leftthumby(), driver.rightthumbx());
+      drivetrain.arcade_drive_openloop(flipdrive, leftY, rightX);
     }else{
-      drivetrain.mecanum_drive_openloop(flipdrive, driver.leftthumbx(), driver.rightthumbx(), driver.leftthumby());
+      drivetrain.mecanum_drive_openloop(flipdrive, leftX, rightX, leftY);
     }
 
-    if(driver.rtbutton()){
-      intake.ball_forward();
+    if(wings_deployed){
+      climber.set_wingwheels(leftY * -1);
+    }
+
+    intake.set(driver.triggers());
+
+    if(driver.startbuttonPressed()){
+      climber.climb_cylinder_forward();
+    }
+
+    if(driver.backbuttonPressed()){
+      climber.climb_cylinder_reverse();
+    }
+
+    if(operator.startbutton()){
+      climber.wing_forward();
+      wings_deployed = true;
     }else{
-      if(driver.ltbutton()){
-        intake.ball_reverse();
+      if(operator.backbutton()){
+        climber.wing_reverse();
+        wings_deployed = true;
       }else{
-        intake.ball_stop();
+        climber.wing_stop();
       }
     }
 
@@ -262,6 +285,32 @@ public class Robot extends TimedRobot {
       }
 
       if(operator.ltbutton_pressed()){
+
+        // try{
+        //   new Thread(() -> {
+                
+        //     }).start();
+        //   }catch(Exception e) {}
+
+          //This logical flow should do a full flip sqeqence with a single button press...
+
+        // if(flip_arm){
+        //   thread?
+        //     if(eleavator flippable || (elevator moving to flippable && above moving to flip minimum)){
+		    //         flip_arm
+	      //     }else{   
+	   	  //         if(!run_once){
+        //            elevator move to flippable
+        //            run_once = true;
+        //    	    }
+	      //     }
+
+        //     if(arm_has_flipped beyond elevator mid-flip-point AND the target position is the arm being FLIPPED){
+        //         elevator_move to load position
+        //     }        	
+        //     kill thread?
+        // }
+
         if(elevator.getElevatorSensorPosition() > 33 && !flip_arm){
           arm.setPosition(APosition.FLIPLOAD);
           flip_arm = !flip_arm;
