@@ -68,6 +68,10 @@ public class Arm{
         arm.setSelectedSensorPosition(0, constants.Arm_kPIDLoopIdx, constants.Arm_kTimeoutMs);
     }
 
+    public void zeroArm(){
+        arm.setSelectedSensorPosition(0, constants.Arm_kPIDLoopIdx, constants.Arm_kTimeoutMs);
+    }
+
     public void set(double power){
         AcurrentMode = AMode.MANUAL;
         arm.set(ControlMode.PercentOutput, power);

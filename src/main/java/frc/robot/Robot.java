@@ -52,6 +52,7 @@ public class Robot extends TimedRobot {
   boolean game_piece;
   boolean flip_arm;
   boolean wings_deployed = false;
+  boolean start_procedure = false;
 
   double leftY, leftX, rightX;
 
@@ -158,6 +159,8 @@ public class Robot extends TimedRobot {
     // autoSelected = SmartDashboard.getString("Auto Selector",
     // defaultAuto);
     //System.out.println("Auto selected: " + m_autoSelected);
+    elevator.zeroElevator();
+    arm.zeroArm();
   }
 
   /**
@@ -165,6 +168,17 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousPeriodic() {
+    if(!start_procedure){
+      elevator.setGamePiece(GamePiece.HATCH);
+      elevator.setPosition(Position.HOME);
+      if(elevator.getElevatorSensorPosition() > 3){
+        intake.hatch_clamp();
+      }
+      start_procedure = true;
+    }
+
+    teleopPeriodic();
+
     // switch (m_autoSelected) {
     //   case kCustomAuto:
     //     // Put custom auto code here
@@ -253,9 +267,8 @@ public class Robot extends TimedRobot {
       elevator.set(operator.leftthumby() * -0.8);
     }else{
       if(operator.rtbutton_pressed()){
-        if(!flip_arm)
-          arm.setPosition(APosition.LOAD);
-
+        // if(!flip_arm)
+        //   arm.setPosition(APosition.LOAD);
         if(!flip_arm && arm.getArmSensorPosition() < 10){
           elevator.setPosition(Position.LOAD);
         }else{
@@ -286,11 +299,32 @@ public class Robot extends TimedRobot {
 
       if(operator.ltbutton_pressed()){
 
-        // try{
-        //   new Thread(() -> {
-                
-        //     }).start();
-        //   }catch(Exception e) {}
+        try{
+          new Thread(() -> {
+            boolean complete = false;
+            boolean run_once = false;
+            while(!complete){
+              if(elevator.isElevatorFlippable() || (elevator.isTargetPositionFlippable() && elevator.getElevatorSensorPosition() > 20)){
+                if(!flip_arm){
+                  arm.setPosition(APosition.FLIPLOAD);
+                  flip_arm = !flip_arm;
+                  complete = true;
+                }else{
+                    arm.setPosition(APosition.LOAD); 
+                    flip_arm = !flip_arm;
+                    complete = true;
+                }
+              }else{
+                if(!run_once){
+                  elevator.setPosition(Position.FLIP);
+                  run_once = true;
+                }
+              }
+            }
+            //thread kill
+            Thread.currentThread().interrupt();
+          }).start();
+          }catch(Exception e) {}
 
           //This logical flow should do a full flip sqeqence with a single button press...
 
@@ -311,15 +345,6 @@ public class Robot extends TimedRobot {
         //     kill thread?
         // }
 
-        if(elevator.getElevatorSensorPosition() > 33 && !flip_arm){
-          arm.setPosition(APosition.FLIPLOAD);
-          flip_arm = !flip_arm;
-        }else{
-          if(elevator.getElevatorSensorPosition() > 33){
-            arm.setPosition(APosition.LOAD); 
-            flip_arm = !flip_arm;
-          }
-        }
       }
 
       elevator.holdPosition();

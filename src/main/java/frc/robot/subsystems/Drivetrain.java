@@ -78,6 +78,10 @@ public class Drivetrain{
     public void arcade_drive_openloop(double inversion, double leftY, double rightX){
         
         shift_solenoid.set(false);
+
+        if(inversion == -1){
+            rightX = -rightX;
+        }
         
         double leftPower =  inversion * (leftY - rightX);
         double rightPower = inversion * (leftY + rightX);
@@ -93,6 +97,10 @@ public class Drivetrain{
     public void mecanum_drive_openloop(double inversion, double triggers, double rightX, double leftY){
 
         rightX = rightX * -1;
+        
+        if(inversion == -1){
+            rightX = -rightX;
+        }
         
         double _FrontRight = leftY - rightX - triggers;
         double _RearRight = leftY - rightX + triggers;

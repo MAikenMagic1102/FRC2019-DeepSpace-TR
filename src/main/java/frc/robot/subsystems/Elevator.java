@@ -84,6 +84,10 @@ public class Elevator{
         Master.burnFlash();
     }
 
+    public void zeroElevator(){
+        MasterEncoder.setPosition(0);
+    }
+
     public void set(double power){
         currentMode = Mode.MANUAL;
         PIDController.setReference(power, ControlType.kDutyCycle);
@@ -154,6 +158,7 @@ public class Elevator{
                 switch(currentPos){
                     case HOME:
                     //Master.set(ControlMode.MotionMagic, 0);
+                        PIDController.setReference(4, ControlType.kSmartMotion);
                         break;
                     case LOAD:
                         targetPosition = constants.ElevatorHatchLoad;
