@@ -29,12 +29,11 @@ public class Constants {
 
     public double ElevatorMaxVelocity = 6000; //RPM
     public double ElevatorMaxAccel = 4000;
-    public double Elevator_kP = 0.00006
-    ;
-    public double Elevator_kI = 0;
-    public double Elevator_kD = 0.00100;
+    public double Elevator_kP = 0.00000004;
+    public double Elevator_kI = 0.00000026;
+    public double Elevator_kD = 0;
     public double Elevator_kIzone = 0;
-    public double Elevator_kF = 0.00012;
+    public double Elevator_kF = 0.0002;
     public double Elevator_kGravity = 0.01;
     public double Elevator_AllowedError = 0.25;
     public int Elevator_kSmartMotionSlot = 0;
@@ -49,9 +48,9 @@ public class Constants {
 
     public int ArmMaxVelocity = 470;
     public int ArmMaxAccel = 300;
-    public double Arm_kP = 2.8;
+    public double Arm_kP = 1.4;
     public double Arm_kI = 0;
-    public double Arm_kD = 160;
+    public double Arm_kD = 120;
     public double Arm_kF = 0;
     public double Arm_izone = 0;
     public double Arm_peak_output = 1;

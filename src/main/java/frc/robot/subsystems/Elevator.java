@@ -135,6 +135,8 @@ public class Elevator{
                         PIDController.setReference(constants.ElevatorHatchLoad, ControlType.kSmartMotion);   
                         break;
                     case FLIP:
+                    targetPosition = constants.ElevatorFlip;
+                    PIDController.setReference(constants.ElevatorFlip, ControlType.kSmartMotion);
                     //Master.set(ControlMode.MotionMagic, 931);
                         break;
                     case HIGH://95
@@ -143,7 +145,7 @@ public class Elevator{
                     //Master.set(ControlMode.MotionMagic, -426);
                         break;
                     case MID://54
-                    targetPosition = 54;
+                    targetPosition = 30;
                     PIDController.setReference(54, ControlType.kSmartMotion);
                     //Master.set(ControlMode.MotionMagic, -1055);
                         break;
@@ -158,7 +160,7 @@ public class Elevator{
                 switch(currentPos){
                     case HOME:
                     //Master.set(ControlMode.MotionMagic, 0);
-                        PIDController.setReference(4, ControlType.kSmartMotion);
+                        PIDController.setReference(5, ControlType.kSmartMotion);
                         break;
                     case LOAD:
                         targetPosition = constants.ElevatorHatchLoad;
@@ -169,7 +171,7 @@ public class Elevator{
                         PIDController.setReference(constants.ElevatorFlip, ControlType.kSmartMotion);
                         break;
                     case HIGH:
-                        targetPosition = 98;
+                        targetPosition = 97;
                         PIDController.setReference(98, ControlType.kSmartMotion);
                     //Master.set(ControlMode.MotionMagic, -426);
                         break;
@@ -238,7 +240,7 @@ public class Elevator{
     }
 
     public boolean isTargetPositionFlippable(){
-        if(targetPosition > 35 && MasterEncoder.getPosition() > 20){
+        if(targetPosition >= 34 && MasterEncoder.getPosition() > 18){
             return true;
         }else{
             return false;

@@ -140,7 +140,7 @@ public class Arm{
                     arm.set(ControlMode.MotionMagic, -1055);
                         break;
                     case LOAD:
-                    arm.set(ControlMode.MotionMagic, -1052);    
+                    arm.set(ControlMode.MotionMagic, -1000);    
                         break;
                     case FLIPLOAD:
                     arm.set(ControlMode.MotionMagic, 931);

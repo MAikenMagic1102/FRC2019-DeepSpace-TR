@@ -168,14 +168,26 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousPeriodic() {
-    if(!start_procedure){
-      elevator.setGamePiece(GamePiece.HATCH);
-      elevator.setPosition(Position.HOME);
-      if(elevator.getElevatorSensorPosition() > 3){
-        intake.hatch_clamp();
-      }
-      start_procedure = true;
-    }
+
+    try{
+      new Thread(() -> {
+        boolean complete = false;
+        boolean run_once = false;
+        while(!complete){
+          if(!run_once){
+            elevator.setGamePiece(GamePiece.HATCH);
+            elevator.setPosition(Position.HOME);
+            start_procedure = true;
+          }
+          if(elevator.getElevatorSensorPosition() > 3){
+            intake.hatch_clamp();
+            complete = true;
+          }
+        }
+        //thread kill
+        Thread.currentThread().interrupt();
+      }).start();
+      }catch(Exception e) {}
 
     teleopPeriodic();
 
@@ -245,11 +257,11 @@ public class Robot extends TimedRobot {
       climber.climb_cylinder_reverse();
     }
 
-    if(operator.startbutton()){
+    if(operator.backbutton()){
       climber.wing_forward();
       wings_deployed = true;
     }else{
-      if(operator.backbutton()){
+      if(driver.ltbutton()){
         climber.wing_reverse();
         wings_deployed = true;
       }else{
@@ -267,8 +279,8 @@ public class Robot extends TimedRobot {
       elevator.set(operator.leftthumby() * -0.8);
     }else{
       if(operator.rtbutton_pressed()){
-        // if(!flip_arm)
-        //   arm.setPosition(APosition.LOAD);
+        if(!flip_arm)
+          arm.setPosition(APosition.LOAD);
         if(!flip_arm && arm.getArmSensorPosition() < 10){
           elevator.setPosition(Position.LOAD);
         }else{
@@ -304,7 +316,7 @@ public class Robot extends TimedRobot {
             boolean complete = false;
             boolean run_once = false;
             while(!complete){
-              if(elevator.isElevatorFlippable() || (elevator.isTargetPositionFlippable() && elevator.getElevatorSensorPosition() > 20)){
+              if(elevator.isElevatorFlippable() && elevator.isTargetPositionFlippable()){
                 if(!flip_arm){
                   arm.setPosition(APosition.FLIPLOAD);
                   flip_arm = !flip_arm;
@@ -350,7 +362,7 @@ public class Robot extends TimedRobot {
       elevator.holdPosition();
     }
   
-    if(operator.rightthumby() > 0.2 || operator.rightthumby() < -0.2){
+    if(operator.rightthumby() > 0.15 || operator.rightthumby() < -0.15){
       if(arm.getArmSensorPosition() >= 900 && operator.rightthumby() > 0.2){
         arm.holdPosition();
       }else{

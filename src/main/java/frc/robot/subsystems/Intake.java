@@ -22,7 +22,7 @@ public class Intake{
     }
 
     public void set(double output){
-        ball_intake.set(ControlMode.PercentOutput, output);
+        ball_intake.set(ControlMode.PercentOutput, -1 * output);
     }
     
     public void ball_forward(){

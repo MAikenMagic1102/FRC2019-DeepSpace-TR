@@ -75,6 +75,29 @@ public class Drivetrain{
         return out*sing;
     }
 
+    double drive_math_mec(double input){
+        double out;
+        double sing;
+       
+        if(input < 0){
+            sing = -1;
+            input = -input;
+        }else {
+            sing = 1;
+        }
+       
+        if (input < .2){
+            out = 0;
+        }else{
+            if(input < .80){
+                out = input * 0.3;
+            }else {
+                out = input;
+            }
+        } 
+        return out*sing;
+    }
+
     public void arcade_drive_openloop(double inversion, double leftY, double rightX){
         
         shift_solenoid.set(false);
@@ -107,10 +130,10 @@ public class Drivetrain{
         double _FrontLeft = leftY + rightX + triggers;
         double _RearLeft = leftY + rightX - triggers;
 
-        RightRear.set(inversion * drive_math(_RearRight));
-        RightFront.set(inversion * drive_math(_FrontRight));
-        LeftRear.set(inversion * drive_math(_RearLeft));
-        LeftFront.set(inversion * drive_math(_FrontLeft));
+        RightRear.set(inversion * drive_math_mec(_RearRight));
+        RightFront.set(inversion * drive_math_mec(_FrontRight));
+        LeftRear.set(inversion * drive_math_mec(_RearLeft));
+        LeftFront.set(inversion * drive_math_mec(_FrontLeft));
 
         shift_solenoid.set(true);
       
