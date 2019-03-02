@@ -27,10 +27,10 @@ public class Constants {
     public double Drive_OkayError = 2;
     public double Drive_Turn_OkayError = 2;
 
-    public double ElevatorMaxVelocity = 6000; //RPM
-    public double ElevatorMaxAccel = 4000;
-    public double Elevator_kP = 0.00000004;
-    public double Elevator_kI = 0.00000026;
+    public double ElevatorMaxVelocity = 5000;//6000; //RPM
+    public double ElevatorMaxAccel = 12000;//4000;
+    public double Elevator_kP = 0.000000044;
+    public double Elevator_kI = 0.00000060;
     public double Elevator_kD = 0;
     public double Elevator_kIzone = 0;
     public double Elevator_kF = 0.0002;
@@ -46,12 +46,12 @@ public class Constants {
     public int Arm_kTimeoutMs = 30;
 
 
-    public int ArmMaxVelocity = 470;
-    public int ArmMaxAccel = 300;
-    public double Arm_kP = 1.4;
+    public int ArmMaxVelocity = 380;//470;
+    public int ArmMaxAccel = 600;//300;
+    public double Arm_kP = 1.5;
     public double Arm_kI = 0;
-    public double Arm_kD = 120;
-    public double Arm_kF = 0;
+    public double Arm_kD = 200;
+    public double Arm_kF = 2.273; //0
     public double Arm_izone = 0;
     public double Arm_peak_output = 1;
     public double Arm_kGravity = 0;

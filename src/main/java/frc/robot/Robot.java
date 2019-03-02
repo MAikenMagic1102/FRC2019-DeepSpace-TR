@@ -53,6 +53,7 @@ public class Robot extends TimedRobot {
   boolean flip_arm;
   boolean wings_deployed = false;
   boolean start_procedure = false;
+  boolean start_procedure_full = false;
 
   double leftY, leftX, rightX;
 
@@ -168,7 +169,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousPeriodic() {
-
+    if(!start_procedure_full){
     try{
       new Thread(() -> {
         boolean complete = false;
@@ -179,17 +180,23 @@ public class Robot extends TimedRobot {
             elevator.setPosition(Position.HOME);
             start_procedure = true;
           }
-          if(elevator.getElevatorSensorPosition() > 3){
+          if(elevator.getElevatorSensorPosition() > 4.4){
             intake.hatch_clamp();
             complete = true;
+            start_procedure_full = true;
+            return;
           }
         }
         //thread kill
-        Thread.currentThread().interrupt();
+        return;
       }).start();
       }catch(Exception e) {}
+    }
 
-    teleopPeriodic();
+    if(start_procedure_full){
+      teleopPeriodic();
+    }  
+
 
     // switch (m_autoSelected) {
     //   case kCustomAuto:
@@ -270,9 +277,9 @@ public class Robot extends TimedRobot {
     }
 
     if(hatch){
-      intake.hatch_clamp();
-    }else{
       intake.hatch_release();
+    }else{
+      intake.hatch_clamp();
     }
 
     if(operator.leftthumby() > 0.2 || operator.leftthumby() < -0.2){
@@ -316,7 +323,7 @@ public class Robot extends TimedRobot {
             boolean complete = false;
             boolean run_once = false;
             while(!complete){
-              if(elevator.isElevatorFlippable() && elevator.isTargetPositionFlippable()){
+              if((elevator.isElevatorFlippable() && elevator.isTargetPositionFlippable()) || elevator.isTargetPositionFlippable()){
                 if(!flip_arm){
                   arm.setPosition(APosition.FLIPLOAD);
                   flip_arm = !flip_arm;
@@ -334,7 +341,7 @@ public class Robot extends TimedRobot {
               }
             }
             //thread kill
-            Thread.currentThread().interrupt();
+            return;
           }).start();
           }catch(Exception e) {}
 

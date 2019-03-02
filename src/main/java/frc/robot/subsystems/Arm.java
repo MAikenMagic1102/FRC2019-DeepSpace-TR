@@ -118,16 +118,16 @@ public class Arm{
                     arm.set(ControlMode.MotionMagic, 0);
                         break;
                     case GROUND:
-                    arm.set(ControlMode.MotionMagic, -1055);
+                    arm.set(ControlMode.MotionMagic, -1045);
                         break;
                     case LOAD:
-                    arm.set(ControlMode.MotionMagic, -1206);    
+                    arm.set(ControlMode.MotionMagic, -1106);    
                         break;
                     case FLIPLOAD:
                     arm.set(ControlMode.MotionMagic, 931);
                         break;
                     case HIGH:
-                    arm.set(ControlMode.MotionMagic, -652);
+                    arm.set(ControlMode.MotionMagic, -642);
                         break;
                 }
                 break;
