@@ -16,7 +16,6 @@ public class Elevator{
     private Timer profileTimer = new Timer();
 
     Constants constants = new Constants();
-    Arm arm = new Arm();
 
     private double holdPosition = 0;
     public double targetPosition = 0;
@@ -129,10 +128,12 @@ public class Elevator{
                 switch(currentPos){
                     case HOME:
                     //Master.set(ControlMode.MotionMagic, 0);
+                    targetPosition = 35;
+                    PIDController.setReference(35, ControlType.kSmartMotion);
                         break;
                     case LOAD:
-                        targetPosition = constants.ElevatorHatchLoad;
-                        PIDController.setReference(constants.ElevatorHatchLoad, ControlType.kSmartMotion);   
+                        targetPosition = constants.ElevatorCargoLoad;
+                        PIDController.setReference(constants.ElevatorCargoLoad, ControlType.kSmartMotion);   
                         break;
                     case FLIP:
                     targetPosition = constants.ElevatorFlip;
@@ -160,7 +161,7 @@ public class Elevator{
                 switch(currentPos){
                     case HOME:
                     //Master.set(ControlMode.MotionMagic, 0);
-                        PIDController.setReference(5, ControlType.kSmartMotion);
+                        PIDController.setReference(10, ControlType.kSmartMotion);
                         break;
                     case LOAD:
                         targetPosition = constants.ElevatorHatchLoad;
@@ -232,7 +233,7 @@ public class Elevator{
     }
     
     public boolean isElevatorFlippable(){
-        if(MasterEncoder.getPosition() < 35){
+        if(MasterEncoder.getPosition() < 35 || MasterEncoder.getPosition() > 45){
             return false;
         }else{
             return true;

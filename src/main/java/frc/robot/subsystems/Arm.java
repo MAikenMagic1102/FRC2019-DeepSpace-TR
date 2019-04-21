@@ -6,16 +6,19 @@ import com.ctre.phoenix.motorcontrol.StatusFrameEnhanced;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
 import frc.robot.Constants;
-import frc.robot.subsystems.Elevator.GamePiece;
-import frc.robot.subsystems.Elevator.Position;
+
+import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.Timer;
 
 public class Arm{
 
-    private TalonSRX arm;
+    TalonSRX arm;
+    Solenoid diskbrake;
 
     Constants constants = new Constants();
 
     private double holdPosition = 0;
+    public double armPosition;
 
     public enum AMode{
         MANUAL,
@@ -43,6 +46,7 @@ public class Arm{
 
     public Arm(){
         arm = new TalonSRX(9);
+        diskbrake = new Solenoid(1, 3);
 
         arm.configFactoryDefault();
 
@@ -95,7 +99,7 @@ public class Arm{
 
     public void holdingPosition(){
         if(AcurrentMode == AMode.HOLD || AcurrentMode == AMode.HOLDING){
-            arm.set(ControlMode.Position, holdPosition);
+            arm.set(ControlMode.MotionMagic, holdPosition);
             AcurrentMode = AMode.HOLDING;
         }
     }
@@ -105,23 +109,19 @@ public class Arm{
     }
 
     public void setPosition(APosition position){
-        if(AcurrentMode == AMode.MOTION_MAGIC && isArmProfileComplete()){
-            AcurrentMode = AMode.HOLD;
-            holdPosition();
-        }else{
         AcurrentPos = position;
         AcurrentMode = AMode.MOTION_MAGIC;
         switch(AcurrentGP){
             case CARGO:
                 switch(AcurrentPos){
                     case HOME:
-                    arm.set(ControlMode.MotionMagic, 0);
+                    arm.set(ControlMode.MotionMagic,  -1186);
                         break;
                     case GROUND:
                     arm.set(ControlMode.MotionMagic, -1045);
                         break;
                     case LOAD:
-                    arm.set(ControlMode.MotionMagic, -1106);    
+                    arm.set(ControlMode.MotionMagic, -1186);    
                         break;
                     case FLIPLOAD:
                     arm.set(ControlMode.MotionMagic, 931);
@@ -134,22 +134,30 @@ public class Arm{
             case HATCH:
                 switch(AcurrentPos){
                     case HOME:
-                    arm.set(ControlMode.MotionMagic, -10);
+                    arm.set(ControlMode.MotionMagic, -640);
                         break;
                     case GROUND:
                     arm.set(ControlMode.MotionMagic, -1055);
                         break;
                     case LOAD:
-                    arm.set(ControlMode.MotionMagic, -1000);    
+                    arm.set(ControlMode.MotionMagic, -978);   
                         break;
                     case FLIPLOAD:
-                    arm.set(ControlMode.MotionMagic, 931);
+                    arm.set(ControlMode.MotionMagic, 920);
                         break;
                     case HIGH:
                         break;
                 }
                 break;
             }
+        
+    }
+
+    public void update_brake(boolean climbing){
+        if((Math.abs(arm.getClosedLoopError()) < 75 && AcurrentMode != AMode.MANUAL) || climbing){
+            diskbrake.set(true);
+        }else{
+            diskbrake.set(false);
         }
     }
 

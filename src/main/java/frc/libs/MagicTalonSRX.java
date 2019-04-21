@@ -8,6 +8,8 @@ public class MagicTalonSRX extends TalonSRX{
     protected double mLastSet = Double.NaN;
     protected ControlMode mLastControlMode = null;
 
+    int lastValue;
+
     public MagicTalonSRX(int devicenumber){
         super(devicenumber);
     }
@@ -22,6 +24,16 @@ public class MagicTalonSRX extends TalonSRX{
             mLastSet = value;
             mLastControlMode = mode;
             super.set(mode, value);
+        }
+    }
+
+    public int getSelectedSensorPosition(){
+        if(lastValue != super.getSelectedSensorPosition()){
+            lastValue = super.getSelectedSensorPosition();
+            return lastValue;
+        }
+        else{
+            return lastValue;
         }
     }
 }

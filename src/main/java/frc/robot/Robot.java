@@ -11,17 +11,13 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
-
-import edu.wpi.cscore.CvSink;
-import edu.wpi.cscore.CvSource;
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.first.cameraserver.CameraServer;
-import edu.wpi.first.wpilibj.IterativeRobotBase;
 import edu.wpi.first.wpilibj.PowerDistributionPanel;
-import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.Watchdog;
+import edu.wpi.first.wpilibj.Spark;
+import frc.libs.REVAnalogPressureSensor;
 import frc.libs.RazerController;
+
 import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.Drivetrain;
@@ -32,9 +28,7 @@ import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Limelight;
 import frc.robot.subsystems.Arm.AGamePiece;
 import frc.robot.subsystems.Arm.APosition;
-import frc.robot.subsystems.Limelight.CameraMode;
 import frc.robot.subsystems.Limelight.LightMode;
-import frc.robot.subsystems.Limelight;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -47,11 +41,12 @@ public class Robot extends TimedRobot {
   private static final String kDefaultAuto = "Default";
   private static final String kCustomAuto = "My Auto";
   double flipdrive = 1;
-  boolean drivemode = false;
+  boolean drivemode = true;
   boolean hatch = false;
   boolean game_piece;
   boolean flip_arm;
-  boolean wings_deployed = false;
+  boolean climber_deployed = false;
+  boolean climber_retracting = false;
   boolean start_procedure = false;
   boolean start_procedure_full = false;
 
@@ -64,9 +59,10 @@ public class Robot extends TimedRobot {
   RazerController operator = new RazerController(1);
 
   PowerDistributionPanel PDP = new PowerDistributionPanel(0);
+  REVAnalogPressureSensor Pressure = new REVAnalogPressureSensor(0);
 
   UsbCamera camera1;
-  UsbCamera camera2;
+  //UsbCamera camera2;
   Limelight limelight = new Limelight();
 
   Elevator elevator = new Elevator();
@@ -75,21 +71,25 @@ public class Robot extends TimedRobot {
   Arm arm = new Arm();
   Climber climber = new Climber();
 
+  Spark climberwheels = new Spark(0);
+
   /**
    * This function is run when the robot is first started up and should be
    * used for any initialization code.
    */
   @Override
   public void robotInit() {
-    limelight.setLedMode(LightMode.eOn);
     //limelight.setCameraMode(CameraMode.eDriver);
+    limelight.setLedMode(LightMode.eOff);
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto modes", m_chooser);
     updateDashboard();
 
     camera1 = CameraServer.getInstance().startAutomaticCapture(0);
-    camera2 = CameraServer.getInstance().startAutomaticCapture(1);
+    camera1.setExposureManual(55);
+    camera1.setWhiteBalanceManual(55);
+    camera1.setFPS(30);
   }
 
   
@@ -106,9 +106,11 @@ public class Robot extends TimedRobot {
 
           SmartDashboard.putBoolean("Cargo", game_piece);
           SmartDashboard.putBoolean("Hatch", !game_piece);
-          SmartDashboard.putNumber("Drive flipped?", flipdrive);
+          SmartDashboard.putBoolean("Drive flipped?", (flipdrive == -1));
           SmartDashboard.putBoolean("Mecanum Enabled?", drivemode);
           SmartDashboard.putBoolean("Shift Solenoid State: ", drivetrain.getShiftSolenoidState());
+
+          SmartDashboard.putNumber("Pressure: ", Pressure.getPressure());
 
           SmartDashboard.putNumber("Arm Current", arm.getMotorOutputCurrent());
           SmartDashboard.putNumber("Relative Arm Position", arm.getArmSensorPosition());
@@ -125,6 +127,9 @@ public class Robot extends TimedRobot {
           SmartDashboard.putNumber("Elevator Target Position", elevator.targetPosition);
 
           SmartDashboard.putBoolean("Arm Flipped", flip_arm);
+          SmartDashboard.putNumber("POV Value", driver.getPOV());
+
+          SmartDashboard.putBoolean("Target Aquired?", limelight.isTarget());
         }
       }).start();
     }catch(Exception e){
@@ -214,13 +219,14 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
+    arm.update_brake(climber_deployed);
 
     leftY = driver.leftthumby();
     leftX = driver.leftthumbx();
     rightX = driver.rightthumbx();
 
     if(driver.abutton_pressed()){
-      flipdrive = flipdrive * -1;
+      //flipdrive = flipdrive * -1;
     }
 
     if(driver.bbutton_pressed()){
@@ -229,6 +235,9 @@ public class Robot extends TimedRobot {
 
     if(driver.rtbutton_pressed()){
       hatch = !hatch;
+      if(hatch){
+        intake.stinger_cycle();
+      }
     }
 
     if(operator.xbutton_pressed()){
@@ -246,33 +255,52 @@ public class Robot extends TimedRobot {
     //If drivemode is false arcade enabled, if drivemode is true....mecanum
     if(!drivemode){
       drivetrain.arcade_drive_openloop(flipdrive, leftY, rightX);
+      limelight.setLedMode(LightMode.eOff);
     }else{
-      drivetrain.mecanum_drive_openloop(flipdrive, leftX, rightX, leftY);
+      if(driver.xbutton()){
+        limelight.setLedMode(LightMode.eOn);
+        if(limelight.isTarget()){
+          drivetrain.limelight_mecdrive(flipdrive, limelight.getTx(), leftX, leftY);
+        }else{
+          drivetrain.mecanum_drive_openloop(flipdrive, leftX, rightX, leftY);
+        }
+      }else{
+        drivetrain.mecanum_drive_openloop(flipdrive, leftX, rightX, leftY);
+        limelight.setLedMode(LightMode.eOff);
+      }
     }
 
-    if(wings_deployed){
-      climber.set_wingwheels(leftY * -1);
-    }
 
+    climberwheels.set(leftY * -1);
+
+    if(driver.triggers() > 0.2){
+      intake.set(1.0);
+    }else{
+      if(driver.triggers() < -0.2){
+        intake.set(-1.0);
+      }else{
+        intake.set(0.2);
+      }
+    }
     intake.set(driver.triggers());
 
     if(driver.startbuttonPressed()){
+      climber_deployed = true;
       climber.climb_cylinder_forward();
+      drivemode = false;
+      climber_deployed = true;
+      climber_retracting = false;
     }
 
-    if(driver.backbuttonPressed()){
+    if(driver.backbutton() && climber_deployed){
       climber.climb_cylinder_reverse();
-    }
-
-    if(operator.backbutton()){
-      climber.wing_forward();
-      wings_deployed = true;
+      climber_retracting = true;
     }else{
-      if(driver.ltbutton()){
-        climber.wing_reverse();
-        wings_deployed = true;
-      }else{
-        climber.wing_stop();
+      if(climber_retracting){
+        climber.climb_cylinder_off();
+      }
+      if(!climber_deployed){
+        climber.climb_cylinder_reverse();
       }
     }
 
@@ -285,17 +313,62 @@ public class Robot extends TimedRobot {
     if(operator.leftthumby() > 0.2 || operator.leftthumby() < -0.2){
       elevator.set(operator.leftthumby() * -0.8);
     }else{
-      if(operator.rtbutton_pressed()){
-        if(!flip_arm)
-          arm.setPosition(APosition.LOAD);
-        if(!flip_arm && arm.getArmSensorPosition() < 10){
-          elevator.setPosition(Position.LOAD);
-        }else{
-          if(flip_arm && arm.getArmSensorPosition() > 10){
-            elevator.setPosition(Position.LOAD);
-          }
-        }
 
+      if(operator.getPOV() == 0){
+        elevator.set(0.45);
+        //climber_deployed = true;
+      }else{
+        if(operator.getPOV() == 180){
+          elevator.set(-0.45);
+          //climber_deployed = true;
+        }else{
+
+
+
+      if(operator.rtbutton_pressed()){
+        //if(!flip_arm)
+          elevator.setPosition(Position.LOAD);
+          arm.setPosition(APosition.LOAD);
+
+        //if(!flip_arm && arm.getArmSensorPosition() < 10){
+
+          //  if(arm.getArmSensorPosition() < -1005){
+          //     try{
+          //     new Thread(() -> {
+          //      boolean complete = false;
+          //      boolean run_once = false;
+          //      while(!complete){
+          //          if(!run_once){
+          //              arm.setPosition(APosition.HOME);
+          //              run_once = true;
+          //          }
+          //          else{
+          //           complete = true;
+          //           arm.setPosition(APosition.LOAD);
+          //          }
+                   
+          //      }
+          //      //thread kill
+          //        return;                   
+          //      }).start();
+          //      }catch(Exception e) {}
+          //  }else{          
+        //         elevator.setPosition(Position.LOAD);
+        //   // }
+        // }else{
+        //   if(flip_arm && arm.getArmSensorPosition() > 10){
+        //     elevator.setPosition(Position.LOAD);
+        //   }
+          
+          
+        
+
+      }
+
+      if(operator.ltbutton()){
+        elevator.setPosition(Position.HOME);
+        if(game_piece && !flip_arm)
+          arm.setPosition(APosition.HIGH);
       }
 
       if(operator.ybutton_pressed()){
@@ -316,64 +389,54 @@ public class Robot extends TimedRobot {
           arm.setPosition(APosition.HIGH);
       }
 
-      if(operator.ltbutton_pressed()){
+      // if(operator.ltbutton_pressed()){
+      //   elevator.setPosition(Position.HOME);
+      //   // try{
+      //   //   new Thread(() -> {
+      //   //     boolean complete = false;
+      //   //     boolean run_once = false;
+      //   //     while(!complete){
+      //   //       if((elevator.isElevatorFlippable() && elevator.isTargetPositionFlippable()) || elevator.isTargetPositionFlippable()){
+      //   //         if(!flip_arm){
+      //   //           //arm.setPosition(APosition.FLIPLOAD);
+      //   //           flip_arm = !flip_arm;
+      //   //           complete = true;
+      //   //         }else{
+      //   //             arm.setPosition(APosition.LOAD); 
+      //   //             flip_arm = !flip_arm;
+      //   //             complete = true;
+      //   //         }
+      //   //       }else{
+      //   //         if(!run_once){
+      //   //           elevator.setPosition(Position.FLIP);
+      //   //           run_once = true;
+      //   //         }
+      //   //       }
+      //   //     }
+      //   //     //thread kill
+      //   //     return;
+      //   //   }).start();
+      //   //   }catch(Exception e) {}
+      //   }
 
-        try{
-          new Thread(() -> {
-            boolean complete = false;
-            boolean run_once = false;
-            while(!complete){
-              if((elevator.isElevatorFlippable() && elevator.isTargetPositionFlippable()) || elevator.isTargetPositionFlippable()){
-                if(!flip_arm){
-                  arm.setPosition(APosition.FLIPLOAD);
-                  flip_arm = !flip_arm;
-                  complete = true;
-                }else{
-                    arm.setPosition(APosition.LOAD); 
-                    flip_arm = !flip_arm;
-                    complete = true;
-                }
-              }else{
-                if(!run_once){
-                  elevator.setPosition(Position.FLIP);
-                  run_once = true;
-                }
-              }
-            }
-            //thread kill
-            return;
-          }).start();
-          }catch(Exception e) {}
-
-          //This logical flow should do a full flip sqeqence with a single button press...
-
-        // if(flip_arm){
-        //   thread?
-        //     if(eleavator flippable || (elevator moving to flippable && above moving to flip minimum)){
-		    //         flip_arm
-	      //     }else{   
-	   	  //         if(!run_once){
-        //            elevator move to flippable
-        //            run_once = true;
-        //    	    }
-	      //     }
-
-        //     if(arm_has_flipped beyond elevator mid-flip-point AND the target position is the arm being FLIPPED){
-        //         elevator_move to load position
-        //     }        	
-        //     kill thread?
-        // }
-
+        if(!climber_deployed){
+          elevator.holdPosition();
+        }else{
+          elevator.set(0.0);  
+        }
+        }
       }
-
-      elevator.holdPosition();
     }
   
     if(operator.rightthumby() > 0.15 || operator.rightthumby() < -0.15){
       if(arm.getArmSensorPosition() >= 900 && operator.rightthumby() > 0.2){
         arm.holdPosition();
       }else{
-        arm.set(operator.rightthumby() * 0.3);
+        if(climber_deployed){
+          arm.set(operator.rightthumby() * 0.6);
+        }else{
+          arm.set(operator.rightthumby() * 0.4);
+        }
       }
     }else{
       arm.holdPosition();

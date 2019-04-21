@@ -21,6 +21,10 @@ public class Drivetrain{
 
     Solenoid shift_solenoid;
 
+    //double lasterror = 0;
+    double kSteerP = 0.025;
+    //double kSteerD = 0.40;
+
     public Drivetrain(){
         RightFront = new CANSparkMax(2, MotorType.kBrushless);
         LeftRear = new CANSparkMax(4, MotorType.kBrushless);
@@ -32,10 +36,15 @@ public class Drivetrain{
         RightFront.setInverted(true);
         RightRear.setInverted(true);
 
+        RightFront.setSmartCurrentLimit(55);
+        RightRear.setSmartCurrentLimit(55);
+        LeftFront.setSmartCurrentLimit(55);
+        LeftRear.setSmartCurrentLimit(55);
+
         LeftDriveEncoder = LeftRear.getEncoder();
         RightDriveEncoder = RightRear.getEncoder();
 
-        shift_solenoid = new Solenoid(1, 3);
+        shift_solenoid = new Solenoid(1, 1);
     }
 
     public double getLeftRearEncoder_Pos(){
@@ -63,7 +72,7 @@ public class Drivetrain{
             sing = 1;
         }
        
-        if (input < .2){
+        if (input < .15){
             out = 0;
         }else{
             if(input < .80){
@@ -73,6 +82,9 @@ public class Drivetrain{
             }
         } 
         return out*sing;
+        //return Math.log(input);
+       
+
     }
 
     double drive_math_mec(double input){
@@ -86,11 +98,11 @@ public class Drivetrain{
             sing = 1;
         }
        
-        if (input < .2){
+        if (input < .15){
             out = 0;
         }else{
             if(input < .80){
-                out = input * 0.3;
+                out = input * 0.5;
             }else {
                 out = input;
             }
@@ -117,7 +129,7 @@ public class Drivetrain{
     }
     
 
-    public void mecanum_drive_openloop(double inversion, double triggers, double rightX, double leftY){
+    public void mecanum_drive_openloop(double inversion, double leftX, double rightX, double leftY){
 
         rightX = rightX * -1;
         
@@ -125,18 +137,55 @@ public class Drivetrain{
             rightX = -rightX;
         }
         
-        double _FrontRight = leftY - rightX - triggers;
-        double _RearRight = leftY - rightX + triggers;
-        double _FrontLeft = leftY + rightX + triggers;
-        double _RearLeft = leftY + rightX - triggers;
+        double _FrontRight = leftY - rightX - leftX;
+        double _RearRight = leftY - rightX + leftX;
+        double _FrontLeft = leftY + rightX + leftX;
+        double _RearLeft = leftY + rightX - leftX;
+
 
         RightRear.set(inversion * drive_math_mec(_RearRight));
         RightFront.set(inversion * drive_math_mec(_FrontRight));
         LeftRear.set(inversion * drive_math_mec(_RearLeft));
         LeftFront.set(inversion * drive_math_mec(_FrontLeft));
 
+
         shift_solenoid.set(true);
       
+    }
+
+    public void limelight_arcadedrive(double inversion, double limelightX, double leftY){
+
+        double steer = (limelightX * kSteerP);
+        leftY = leftY * 0.75;
+
+        double leftPower =  inversion * (leftY - steer);
+        double rightPower = inversion * (leftY + steer);
+
+        LeftFront.set((leftPower));
+        LeftRear.set((leftPower));
+        RightFront.set((rightPower));
+        RightRear.set((rightPower));
+
+    }
+
+    public void limelight_mecdrive(double inversion, double limelightX, double leftX, double leftY){
+
+        double steer = (limelightX * kSteerP) * -1;
+        leftY = leftY * 0.75;
+        
+        double _FrontRight = leftY - steer - leftX;
+        double _RearRight = leftY - steer + leftX;
+        double _FrontLeft = leftY + steer + leftX;
+        double _RearLeft = leftY + steer - leftX;
+
+
+        RightRear.set(inversion * (_RearRight));
+        RightFront.set(inversion * (_FrontRight));
+        LeftRear.set(inversion * (_RearLeft));
+        LeftFront.set(inversion * (_FrontLeft));
+
+
+        shift_solenoid.set(true);
     }
 
 
